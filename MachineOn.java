@@ -48,12 +48,14 @@ class MachineOn
 
 		} catch (UnknownHostException e) {
 
-			e.printStackTrace();
+			//e.printStackTrace();
 
 		} catch (SocketException e){
 
-			e.printStackTrace();
+			//e.printStackTrace();
 
+		} catch (NullPointerException e){
+			
 		}
 
 		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
@@ -69,7 +71,7 @@ class MachineOn
 		System.out.println("Machine local time : " + SysTime);
 		System.out.println("Connecting to Server... Please wait...");
 
-		HTTPKey=HttpRequest.sendPost("http://localhost/MachineOnZend/api/GetKey.php", "key=123&v=456");
+		HTTPKey=HttpRequest.sendPost("http://on.mizzou1.com/api/GetKey.php", "key=123&v=456");
 		if(HTTPKey.toLowerCase().contains("error") ){
 			System.out.println("\n**Server Connection Error!");
 			System.out.println("**Please check your Internet connection and try again!");
@@ -78,12 +80,13 @@ class MachineOn
 		}
 
 		IPAddr = HttpRequest.sendPost("http://ip.mizzou1.com", "");
+		//System.out.println(IPAddr);
 		IPAddr = PrefixIP(IPAddr);
-		//String CurrentResult = HttpRequest.sendPost("http://localhost/MachineOnZend/api/PostTest.php", "key=" + URLEncoder.encode(HTTPKey) + "&" + "value=" +URLEncoder.encode("123 456 \n www.sina.com&Me"));
-		//String CurrentResult = HttpRequest.sendPost("http://localhost/MachineOnZend/api/PostTest.php", "key=" + URLEncoder.encode(HTTPKey) + "&" + "value=123123");
+		//String CurrentResult = HttpRequest.sendPost("http://on.mizzou1.com/api/PostTest.php", "key=" + URLEncoder.encode(HTTPKey) + "&" + "value=" +URLEncoder.encode("123 456 \n www.sina.com&Me"));
+		//String CurrentResult = HttpRequest.sendPost("http://on.mizzou1.com/api/PostTest.php", "key=" + URLEncoder.encode(HTTPKey) + "&" + "value=123123");
 		//System.out.println("Input Test: "+ CurrentResult);
 
-		String CurrentResult = HttpRequest.sendPost("http://localhost/MachineOnZend/api/CreateStatus.php", "key=" + URLEncoder.encode(HTTPKey) + "&" + "OS=" + URLEncoder.encode(SysOS) + "&" + "MAC=" + URLEncoder.encode(" " + MacAddr + " ") + "&" + "IPAddr=" + URLEncoder.encode(IPAddr) + "&" + "UserName=" + URLEncoder.encode(UserName) );
+		String CurrentResult = HttpRequest.sendPost("http://on.mizzou1.com/api/CreateStatus.php", "key=" + URLEncoder.encode(HTTPKey) + "&" + "OS=" + URLEncoder.encode(SysOS) + "&" + "MAC=" + URLEncoder.encode(" " + MacAddr + " ") + "&" + "IPAddr=" + URLEncoder.encode(IPAddr) + "&" + "UserName=" + URLEncoder.encode(UserName) );
 
 		if(CurrentResult.toLowerCase().contains("error")){
 			System.out.println("\n**Server Connection Error!");
@@ -96,24 +99,38 @@ class MachineOn
 		String MachineID = IDs[0];
 		String RecordID = IDs[1];
 
+		//Test Purpose
+		//RecordID = Integer.toString((Integer.parseInt(RecordID)+1));
+
+
 		System.out.println("\n** Please write down the following information**");
 		System.out.println("Current IP: "+ IPAddr);
-		System.out.println("Current Key: "+ HTTPKey);
 		//System.out.println("Current Content Test: "+ CurrentResult);
 		System.out.println("Machine ID: "+ MachineID);
-		System.out.println("Record ID: "+ RecordID);
-		System.out.println("UserName : " + UserName +" <- This is the key (IMPORTANT!)");
-		System.out.println("Check status at on.mizzou1.com");
+		System.out.println("UserName : " + UserName);
+		System.out.println("Check status at http://on.mizzou1.com/machine.php?mid="+MachineID);
+		System.out.println("You can also find your machine by using your username or IP");
 		System.out.println();
-
+		//System.out.println("into loop:");
 		try {
 			while (true) {
-				String UpdateResult = HttpRequest.sendPost("http://localhost/MachineOnZend/api/UpdateStatus.php", "key=" + URLEncoder.encode(HTTPKey) + "&" + "RecordID=" + URLEncoder.encode(RecordID) );
-				System.out.println(UpdateResult);
-				if(UpdateResult.toLowerCase().contains("error")){
-					System.out.println("\nServer Connection Error at " + new Date());
-					System.out.println("Program exit.");
-					System.exit(0); 
+				String UpdateResult = HttpRequest.sendPost("http://on.mizzou1.com/api/UpdateStatus.php", "key=" + URLEncoder.encode(HTTPKey) + "&" + "RecordID=" + URLEncoder.encode(RecordID) );
+				//System.out.println(UpdateResult);
+				if(UpdateResult.toLowerCase().contains("error") || UpdateResult.toLowerCase().contains("restart")){
+					//System.out.println("Try reconnection...");
+					CurrentResult = HttpRequest.sendPost("http://on.mizzou1.com/api/CreateStatus.php", "key=" + URLEncoder.encode(HTTPKey) + "&" + "OS=" + URLEncoder.encode(SysOS) + "&" + "MAC=" + URLEncoder.encode(" " + MacAddr + " ") + "&" + "IPAddr=" + URLEncoder.encode(IPAddr) + "&" + "UserName=" + URLEncoder.encode(UserName) );
+					if(CurrentResult.toLowerCase().contains("error")){
+						System.out.println("\nServer Connection Error at " + new Date());
+						System.out.println("**Please check your Internet connection and try again!");
+						System.out.println("Program exit.");
+						System.exit(0); 
+					}
+
+					IDs = CurrentResult.split(" ", 2);
+					MachineID = IDs[0];
+					RecordID = IDs[1];
+
+					//System.out.println("Reconnect success!");
 				}
 
 				Thread.sleep(30 * 1000);
@@ -139,7 +156,7 @@ class MachineOn
 		int IPLen = input.length();
 		String output = "";
 		for(int i =0; i<IPLen; i++){
-			if( (input.charAt(i)>'0' && input.charAt(i)<'9') || input.charAt(i)=='.' ){
+			if( (input.charAt(i)>='0' && input.charAt(i)<='9') || input.charAt(i)=='.' ){
 				output += input.charAt(i);
 			}
 		}
