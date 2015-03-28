@@ -10,6 +10,7 @@ import java.net.URLEncoder;
 
 class MachineOn
 {
+	private static int CurrentStatus = -1;
 	public static void main(String[] args){
 		String Version = "1.0.0";
 		String SysOS = "Unkown", IPAddr = "Unkown", MacAddr = "Unkown", HostName = "Unkown";
@@ -55,7 +56,7 @@ class MachineOn
 			//e.printStackTrace();
 
 		} catch (NullPointerException e){
-			
+
 		}
 
 		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
@@ -111,21 +112,25 @@ class MachineOn
 		System.out.println("Check status at http://on.mizzou1.com/machine.php?mid="+MachineID);
 		System.out.println("You can also find your machine by using your username or IP");
 		System.out.println();
+		CurrentStatus = 1;
 		//System.out.println("into loop:");
 		try {
 			while (true) {
 				String UpdateResult = HttpRequest.sendPost("http://on.mizzou1.com/api/UpdateStatus.php", "key=" + URLEncoder.encode(HTTPKey) + "&" + "RecordID=" + URLEncoder.encode(RecordID) );
 				//System.out.println(UpdateResult);
 				if(UpdateResult.toLowerCase().contains("error") || UpdateResult.toLowerCase().contains("restart")){
+					CurrentStatus = 0;
+					System.out.println("\nServer Connection Error at " + new Date());
+					Thread.sleep(20 * 1000);
 					//System.out.println("Try reconnection...");
-					CurrentResult = HttpRequest.sendPost("http://on.mizzou1.com/api/CreateStatus.php", "key=" + URLEncoder.encode(HTTPKey) + "&" + "OS=" + URLEncoder.encode(SysOS) + "&" + "MAC=" + URLEncoder.encode(" " + MacAddr + " ") + "&" + "IPAddr=" + URLEncoder.encode(IPAddr) + "&" + "UserName=" + URLEncoder.encode(UserName) );
-					if(CurrentResult.toLowerCase().contains("error")){
-						System.out.println("\nServer Connection Error at " + new Date());
-						System.out.println("**Please check your Internet connection and try again!");
-						System.out.println("Program exit.");
-						System.exit(0); 
+					while(CurrentStatus==0){
+						CurrentResult = HttpRequest.sendPost("http://on.mizzou1.com/api/CreateStatus.php", "key=" + URLEncoder.encode(HTTPKey) + "&" + "OS=" + URLEncoder.encode(SysOS) + "&" + "MAC=" + URLEncoder.encode(" " + MacAddr + " ") + "&" + "IPAddr=" + URLEncoder.encode(IPAddr) + "&" + "UserName=" + URLEncoder.encode(UserName) );
+						if(CurrentResult.toLowerCase().contains("error")){
+							Thread.sleep(60 * 1000);
+						}else{
+							CurrentStatus=1;
+						}
 					}
-
 					IDs = CurrentResult.split(" ", 2);
 					MachineID = IDs[0];
 					RecordID = IDs[1];
